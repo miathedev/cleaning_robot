@@ -67,7 +67,22 @@ class CleaningRobot:
         self.facing = "N"
 
     def robot_status(self) -> str:
-        return "({x},{y},{facing})".format(x=self.pos_x, y=self.pos_y, facing=self.facing)
+        if self.obstacle_found():
+            obj_pos_x = self.pos_x
+            obj_pos_y = self.pos_y
+            match self.facing:
+                case "N":
+                    obj_pos_y += 1
+                case "E":
+                    obj_pos_x += 1
+                case "S":
+                    obj_pos_y -= 1
+                case "W":
+                    obj_pos_x -= 1
+
+            return "({x},{y},{facing})({obj_x}, {obj_y})".format(x=self.pos_x, y=self.pos_y, facing=self.facing, obj_x = obj_pos_x, obj_y=obj_pos_y)
+        else:
+            return "({x},{y},{facing})".format(x=self.pos_x, y=self.pos_y, facing=self.facing)
 
     def execute_command(self, command: str) -> str:
         """
@@ -89,7 +104,7 @@ class CleaningRobot:
         if command not in ["f", "r", "l"]:
             raise CleaningRobotError("Unknown command")
 
-        if command == "f":
+        if command == "f" and not self.obstacle_found():
             self.activate_wheel_motor()
             match self.facing:
                 case "N":
@@ -100,7 +115,7 @@ class CleaningRobot:
                     self.pos_y -= 1
                 case "W":
                     self.pos_x -= 1
-        else:
+        elif (command == "r" or command == "l"):
             #Since we filtered other commands already, only r and l is non filtered here. Thoose are actually the commands this function accepts
             self.activate_rotation_motor(command)
             match self.facing:
@@ -131,6 +146,7 @@ class CleaningRobot:
         Checks whether the infrared distance sensor has detected an obstacle in front of it.
         :return: True if the infrared sensor detects something, False otherwise.
         """
+        return GPIO.input(self.INFRARED_PIN) > 0
 
     def enable_cleaning_system(self, state):
         if state == True and self.cleaning_system_on == False:

@@ -11,7 +11,9 @@ class CleaningRobotTest(unittest.TestCase):
     def setUp(self):
         self.robot = CleaningRobot(0,0)
 
-    def test_init_robot_and_get_status(self):
+    @patch("mock.GPIO.input")
+    def test_init_robot_and_get_status(self, mock_input):
+        mock_input.return_value = 0
         #Its basically a "mock", mock a robots position, the init. method should overwrite it
         self.robot.pos_x = 2
         self.robot.pos_y = 3
@@ -45,9 +47,9 @@ class CleaningRobotTest(unittest.TestCase):
         mock_input.return_value = 101
         self.assertRaises(CleaningRobotError, self.robot.manage_battery)
 
-
-
-    def test_robot_movement_eg_execute_command(self):
+    @patch("mock.GPIO.input")
+    def test_robot_movement_eg_execute_command(self, mock_input):
+        mock_input.return_value = 0
         #Init bot
         #
         #  01234
@@ -129,4 +131,17 @@ class CleaningRobotTest(unittest.TestCase):
         for i in range(0,2):
             self.robot.execute_command("f")
 
+        self.assertEqual("(0,0,N)", self.robot.robot_status())
+
+    @patch("mock.GPIO.input")
+    def test_robot_obstacle_detection(self, mock_input):
+        self.robot.initialize_robot()
+        mock_input.return_value = 100;
+        for (facing, obj_x, obj_y) in [("E",1,0), ("S", 0, -1), ("W",-1, 0), ("N", 0,1)]:
+            fmt_string = "(0,0,{facing})({obj_x}, {obj_y})".format(facing=facing, obj_x=obj_x, obj_y=obj_y)
+            status = self.robot.execute_command("r")
+            self.assertEqual(fmt_string, status)
+
+        #obj has been removed
+        mock_input.return_value = 0;
         self.assertEqual("(0,0,N)", self.robot.robot_status())
