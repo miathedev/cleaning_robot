@@ -86,8 +86,46 @@ class CleaningRobot:
             x and y define the new position of the rover while dir represents its direction (i.e., N, S, W, or E).
             Finally, o_x and o_y are the coordinates of the encountered obstacle.
         """
-        pass
+        if command not in ["f", "r", "l"]:
+            raise CleaningRobotError("Unknown command")
 
+        if command == "f":
+            self.activate_wheel_motor()
+            match self.facing:
+                case "N":
+                    self.pos_y += 1
+                case "E":
+                    self.pos_x += 1
+                case "S":
+                    self.pos_y -= 1
+                case "W":
+                    self.pos_x -= 1
+        else:
+            #Since we filtered other commands already, only r and l is non filtered here. Thoose are actually the commands this function accepts
+            self.activate_rotation_motor(command)
+            match self.facing:
+                case "N":
+                    if command == "l":
+                        self.facing = "W"
+                    else:
+                        self.facing = "E"
+                case "E":
+                    if command == "l":
+                        self.facing = "N"
+                    else:
+                        self.facing = "S"
+                case "S":
+                    if command == "l":
+                        self.facing = "E"
+                    else:
+                        self.facing = "W"
+                case "W":
+                    if command == "l":
+                        self.facing = "S"
+                    else:
+                        self.facing = "N"
+
+        return self.robot_status()
     def obstacle_found(self) -> bool:
         """
         Checks whether the infrared distance sensor has detected an obstacle in front of it.

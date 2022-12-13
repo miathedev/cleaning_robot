@@ -47,4 +47,86 @@ class CleaningRobotTest(unittest.TestCase):
 
 
 
+    def test_robot_movement_eg_execute_command(self):
+        #Init bot
+        #
+        #  01234
+        # 0x───┐#4steps
+        #-1▲   │
+        #-2└─┐ │
+        #-3  │ │
+        #-4  └─┘#4 steps
 
+        ###
+        # MOVE 1
+        ###
+        self.robot.initialize_robot()
+        self.assertEqual("(0,0,N)", self.robot.robot_status())
+
+        self.robot.execute_command("r")
+        self.assertEqual("(0,0,E)", self.robot.robot_status())
+
+        #4 steps East
+        for i in range(0,4):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(4,0,E)", self.robot.robot_status())
+
+        ###
+        # MOVE 2
+        ###
+
+        #Turn robot
+        self.robot.execute_command("r")
+        self.assertEqual("(4,0,S)", self.robot.robot_status())
+
+        #4 steps South
+        for i in range(0,4):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(4,-4,S)", self.robot.robot_status())
+
+        ###
+        # MOVE 3
+        ###
+        #Turn robot
+        self.robot.execute_command("r")
+        self.assertEqual("(4,-4,W)", self.robot.robot_status())
+
+        for i in range(0, 2):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(2,-4,W)", self.robot.robot_status())
+
+        ###
+        # MOVE 4
+        ###
+        self.robot.execute_command("r")
+        self.assertEqual("(2,-4,N)", self.robot.robot_status())
+
+        for i in range(0,2):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(2,-2,N)", self.robot.robot_status())
+
+        ###
+        # MOVE 5
+        ###
+        self.robot.execute_command("l")
+        self.assertEqual("(2,-2,W)", self.robot.robot_status())
+
+        for i in range(0,2):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(0,-2,W)", self.robot.robot_status())
+
+        ###
+        # MOVE 6
+        ###
+        self.robot.execute_command("r")
+        self.assertEqual("(0,-2,N)", self.robot.robot_status())
+
+        for i in range(0,2):
+            self.robot.execute_command("f")
+
+        self.assertEqual("(0,0,N)", self.robot.robot_status())
