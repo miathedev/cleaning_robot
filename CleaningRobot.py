@@ -62,14 +62,12 @@ class CleaningRobot:
         """
         Initializes the robot in the starting position (0,0,N)
         """
-        pass
+        self.pos_x = 0
+        self.pos_y = 0
+        self.facing = "N"
 
     def robot_status(self) -> str:
-        """
-        Returns the current status of the robot, as well as any obstacle encountered
-        :return: the status of the robot as a string
-        """
-        pass
+        return "({x},{y},{facing})".format(x=self.pos_x, y=self.pos_y, facing=self.facing)
 
     def execute_command(self, command: str) -> str:
         """
