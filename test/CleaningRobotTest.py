@@ -20,3 +20,31 @@ class CleaningRobotTest(unittest.TestCase):
 
         self.robot.initialize_robot()
         self.assertEqual("(0,0,N)", self.robot.robot_status())
+
+    @patch("mock.GPIO.input")
+    def test_robot_ibs_action(self, mock_input):
+        #Its basically a "mock", mock a robots position, the init. method should overwrite it
+
+        #Boundary test
+        for bat_val in range(0, 10):
+            mock_input.return_value = bat_val  # Battery full enough
+            self.robot.manage_battery()
+            self.assertTrue(self.robot.battery_led_on)
+            self.assertFalse(self.robot.cleaning_system_on)
+
+        for bat_val in range(11, 100):
+            mock_input.return_value = bat_val  # Battery full enough
+            self.robot.manage_battery()
+            self.assertFalse(self.robot.battery_led_on)
+            self.assertTrue(self.robot.cleaning_system_on)
+
+        #Test invalid battery state
+        mock_input.return_value = -1
+        self.assertRaises(CleaningRobotError, self.robot.manage_battery)
+
+        mock_input.return_value = 101
+        self.assertRaises(CleaningRobotError, self.robot.manage_battery)
+
+
+
+

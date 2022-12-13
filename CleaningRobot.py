@@ -94,6 +94,22 @@ class CleaningRobot:
         :return: True if the infrared sensor detects something, False otherwise.
         """
 
+    def enable_cleaning_system(self, state):
+        if state == True and self.cleaning_system_on == False:
+            self.cleaning_system_on = True
+            GPIO.output(self.CLEANING_SYSTEM_PIN, GPIO.HIGH)
+        elif state == False and self.cleaning_system_on == True:
+            self.cleaning_system_on = False
+            GPIO.output(self.CLEANING_SYSTEM_PIN, GPIO.LOW)
+
+    def set_recharge_led(self, state):
+        if state == True and self.battery_led_on == False:
+            self.battery_led_on = True
+            GPIO.output(self.RECHARGE_LED_PIN, GPIO.HIGH)
+        elif state == False and self.battery_led_on == True:
+            self.battery_led_on = False
+            GPIO.output(self.RECHARGE_LED_PIN, GPIO.LOW)
+
     def manage_battery(self) -> None:
         """
         It  checks how much battery is left by querying the IBS.
@@ -101,7 +117,17 @@ class CleaningRobot:
         the robot turns on the recharging led and shuts off the cleaning system.
         Otherwise, the robot turns on the cleaning system and turns off the recharge LED.
         """
-        pass
+        ibs = GPIO.input(self.BATTERY_PIN)  # In percent
+        if ibs > 100 or ibs < 0:
+            raise CleaningRobotError("Battery has invalid state")
+
+        if ibs <= 10:
+            self.set_recharge_led(True)
+            self.enable_cleaning_system(False)
+        else:
+            # Turn on cleaning system
+            self.set_recharge_led(False)
+            self.enable_cleaning_system(True)
 
     def activate_wheel_motor(self) -> None:
         """
