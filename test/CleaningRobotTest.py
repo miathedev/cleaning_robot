@@ -14,6 +14,7 @@ class CleaningRobotTest(unittest.TestCase):
     @patch("mock.GPIO.input")
     def test_init_robot_and_get_status(self, mock_input):
         mock_input.return_value = 0
+
         #Its basically a "mock", mock a robots position, the init. method should overwrite it
         self.robot.pos_x = 2
         self.robot.pos_y = 3
@@ -48,8 +49,11 @@ class CleaningRobotTest(unittest.TestCase):
         self.assertRaises(CleaningRobotError, self.robot.manage_battery)
 
     @patch("mock.GPIO.input")
-    def test_robot_movement_eg_execute_command(self, mock_input):
+    @patch("CleaningRobot.CleaningRobot.get_battery_charge_state")
+    def test_robot_movement_eg_execute_command(self, charge_state, mock_input):
         mock_input.return_value = 0
+        charge_state.return_value = 100
+        self.robot.manage_battery()
         #Init bot
         #
         #  01234
@@ -134,14 +138,36 @@ class CleaningRobotTest(unittest.TestCase):
         self.assertEqual("(0,0,N)", self.robot.robot_status())
 
     @patch("mock.GPIO.input")
-    def test_robot_obstacle_detection(self, mock_input):
+    @patch("CleaningRobot.CleaningRobot.get_battery_charge_state")
+    def test_robot_obstacle_detection(self, charge_state, mock_input):
+        mock_input.return_value = 100
+        charge_state.return_value = 100
+
         self.robot.initialize_robot()
-        mock_input.return_value = 100;
+        self.robot.manage_battery()
+
         for (facing, obj_x, obj_y) in [("E",1,0), ("S", 0, -1), ("W",-1, 0), ("N", 0,1)]:
-            fmt_string = "(0,0,{facing})({obj_x}, {obj_y})".format(facing=facing, obj_x=obj_x, obj_y=obj_y)
+            fmt_string = "(0,0,{facing})({obj_x},{obj_y})".format(facing=facing, obj_x=obj_x, obj_y=obj_y)
             status = self.robot.execute_command("r")
             self.assertEqual(fmt_string, status)
 
         #obj has been removed
         mock_input.return_value = 0;
         self.assertEqual("(0,0,N)", self.robot.robot_status())
+
+    @patch("mock.GPIO.input")
+    @patch("CleaningRobot.CleaningRobot.get_battery_charge_state")
+    def test_robot_ignore_commands_on_battery_empty(self, charge_state, mock_input):
+        mock_input.return_value = 100
+        charge_state.return_value = 4
+
+        self.robot.initialize_robot()
+        self.robot.manage_battery()
+
+        for i in range(0, 4):
+            fmt_string = "(0,0,N)(0,1)"
+            status = self.robot.execute_command("r")
+            self.assertEqual(fmt_string, status)
+
+        self.robot.execute_command("f")
+        self.assertEqual("(0,0,N)(0,1)", self.robot.robot_status())

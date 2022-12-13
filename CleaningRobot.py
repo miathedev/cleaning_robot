@@ -57,6 +57,7 @@ class CleaningRobot:
 
         self.battery_led_on = False
         self.cleaning_system_on = False
+        self.motor_on = True
 
     def initialize_robot(self) -> None:
         """
@@ -80,7 +81,7 @@ class CleaningRobot:
                 case "W":
                     obj_pos_x -= 1
 
-            return "({x},{y},{facing})({obj_x}, {obj_y})".format(x=self.pos_x, y=self.pos_y, facing=self.facing, obj_x = obj_pos_x, obj_y=obj_pos_y)
+            return "({x},{y},{facing})({obj_x},{obj_y})".format(x=self.pos_x, y=self.pos_y, facing=self.facing, obj_x = obj_pos_x, obj_y=obj_pos_y)
         else:
             return "({x},{y},{facing})".format(x=self.pos_x, y=self.pos_y, facing=self.facing)
 
@@ -101,45 +102,45 @@ class CleaningRobot:
             x and y define the new position of the rover while dir represents its direction (i.e., N, S, W, or E).
             Finally, o_x and o_y are the coordinates of the encountered obstacle.
         """
-        if command not in ["f", "r", "l"]:
-            raise CleaningRobotError("Unknown command")
+        if self.motor_on:
+            if command not in ["f", "r", "l"]:
+                raise CleaningRobotError("Unknown command")
 
-        if command == "f" and not self.obstacle_found():
-            self.activate_wheel_motor()
-            match self.facing:
-                case "N":
-                    self.pos_y += 1
-                case "E":
-                    self.pos_x += 1
-                case "S":
-                    self.pos_y -= 1
-                case "W":
-                    self.pos_x -= 1
-        elif (command == "r" or command == "l"):
-            #Since we filtered other commands already, only r and l is non filtered here. Thoose are actually the commands this function accepts
-            self.activate_rotation_motor(command)
-            match self.facing:
-                case "N":
-                    if command == "l":
-                        self.facing = "W"
-                    else:
-                        self.facing = "E"
-                case "E":
-                    if command == "l":
-                        self.facing = "N"
-                    else:
-                        self.facing = "S"
-                case "S":
-                    if command == "l":
-                        self.facing = "E"
-                    else:
-                        self.facing = "W"
-                case "W":
-                    if command == "l":
-                        self.facing = "S"
-                    else:
-                        self.facing = "N"
-
+            if command == "f" and not self.obstacle_found():
+                self.activate_wheel_motor()
+                match self.facing:
+                    case "N":
+                        self.pos_y += 1
+                    case "E":
+                        self.pos_x += 1
+                    case "S":
+                        self.pos_y -= 1
+                    case "W":
+                        self.pos_x -= 1
+            elif (command == "r" or command == "l"):
+                #Since we filtered other commands already, only r and l is non filtered here. Thoose are actually the commands this function accepts
+                self.activate_rotation_motor(command)
+                match self.facing:
+                    case "N":
+                        if command == "l":
+                            self.facing = "W"
+                        else:
+                            self.facing = "E"
+                    case "E":
+                        if command == "l":
+                            self.facing = "N"
+                        else:
+                            self.facing = "S"
+                    case "S":
+                        if command == "l":
+                            self.facing = "E"
+                        else:
+                            self.facing = "W"
+                    case "W":
+                        if command == "l":
+                            self.facing = "S"
+                        else:
+                            self.facing = "N"
         return self.robot_status()
     def obstacle_found(self) -> bool:
         """
@@ -164,6 +165,19 @@ class CleaningRobot:
             self.battery_led_on = False
             GPIO.output(self.RECHARGE_LED_PIN, GPIO.LOW)
 
+    def enable_motor(self, state) -> None:
+        if state == True and self.motor_on == False:
+            self.motor_on = True
+        elif state == False and self.motor_on == True:
+            self.motor_on = False
+
+    def get_battery_charge_state(self):
+        ibs = GPIO.input(self.BATTERY_PIN)  # In percent
+        if ibs > 100 or ibs < 0:
+            raise CleaningRobotError("Battery has invalid state")
+
+        return ibs
+
     def manage_battery(self) -> None:
         """
         It  checks how much battery is left by querying the IBS.
@@ -171,17 +185,17 @@ class CleaningRobot:
         the robot turns on the recharging led and shuts off the cleaning system.
         Otherwise, the robot turns on the cleaning system and turns off the recharge LED.
         """
-        ibs = GPIO.input(self.BATTERY_PIN)  # In percent
-        if ibs > 100 or ibs < 0:
-            raise CleaningRobotError("Battery has invalid state")
+        charge = self.get_battery_charge_state()
 
-        if ibs <= 10:
+        if charge <= 10:
             self.set_recharge_led(True)
             self.enable_cleaning_system(False)
+            self.enable_motor(False)
         else:
             # Turn on cleaning system
             self.set_recharge_led(False)
             self.enable_cleaning_system(True)
+            self.enable_motor(True)
 
     def activate_wheel_motor(self) -> None:
         """
